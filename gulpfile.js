@@ -8,14 +8,15 @@ var gulp        = require('gulp'),
     browserSync = require('browser-sync'),
     runSequence = require('run-sequence'),
     del         = require('del');
+    combiner    = require('stream-combiner2');
 
 var reload      = browserSync.reload;
 
 var SOURCE_FILES = [
   'src/compat.js',
   'src/spiral.core.js',
-  'src/sprial.ext.js',
-  'src/sprial.util.js'
+  'src/sprial.util.js',
+  'src/spiral.midi.js'
 ];
 
 
@@ -28,10 +29,16 @@ gulp.task('clean', del.bind(null, [
 
 // Compile: compile source files.
 gulp.task('compile', function () {
-  return gulp.src(SOURCE_FILES)
-    .pipe(plugins.uglify({ mangle: false }))
-    .pipe(plugins.concat('spiral.min.js'))
-    .pipe(gulp.dest('dist'));
+  var combined = combiner.obj([
+      gulp.src(SOURCE_FILES),
+      plugins.uglify({ mangle: false }),
+      plugins.concat('spiral.min.js'),
+      gulp.dest('dist')
+    ]);
+
+  combined.on('error', console.error.bind(console));
+
+  return combined;
 });
 
 

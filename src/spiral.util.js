@@ -3,7 +3,6 @@
 // 
 // @filename spiral.util.js
 // @description Math utilities and more.
-// @version 0.0.1
 // @author hoch (hongchan.choi@gmail.com)
 // -----------------------------------------------------------------------------
 

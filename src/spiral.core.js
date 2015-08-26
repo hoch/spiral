@@ -3,7 +3,6 @@
 // 
 // @filename spiral.core.js
 // @description Web Audio API prototype extension and few other nice things.
-// @version 0.0.1
 // @author hoch (hongchan.choi@gmail.com)
 // -----------------------------------------------------------------------------
 
@@ -16,7 +15,7 @@
 
 
   // Spiral version.
-  var SPIRAL_VERSION = '0.0.1';
+  var SPIRAL_VERSION = '0.0.2';
 
   // Epsilon value for exponential operation in AudioParam. It is -60dBFS.
   var EPSILON = 0.001;

@@ -3,7 +3,6 @@
 // 
 // @filename compat.js
 // @description Compatibility patch. (aka monkey patch)
-// @version 0.0.1
 // @author hoch (hongchan.choi@gmail.com)
 // -----------------------------------------------------------------------------
 
