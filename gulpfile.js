@@ -1,6 +1,6 @@
 /**
  * Spiral gulp task file.
- * @version 0.0.1
+ * @version 0.0.2
  */
 
 var gulp        = require('gulp'),
@@ -20,20 +20,13 @@ var SOURCE_FILES = [
 ];
 
 
-// Clean: clean dist directory.
-gulp.task('clean', del.bind(null, [
-  'dist/**/*',
-  '!dist'
-]));
-
-
 // Compile: compile source files.
 gulp.task('compile', function () {
   var combined = combiner.obj([
       gulp.src(SOURCE_FILES),
       plugins.uglify({ mangle: false }),
       plugins.concat('spiral.min.js'),
-      gulp.dest('dist')
+      gulp.dest('.')
     ]);
 
   combined.on('error', console.error.bind(console));
@@ -59,7 +52,7 @@ gulp.task('serve', function () {
 
 // Build: Clean and build everything in build/ path.
 gulp.task('build', function (cb) {
-  runSequence('clean', 'compile', cb);
+  runSequence('compile', cb);
 });
 
 
