@@ -1,12 +1,51 @@
-// spiral.util.js
-// : Injecting various utilities.
-//
+// -----------------------------------------------------------------------------
+// Spiral: Light-weight & modular Web Audio/MIDI API Library
+// 
+// @filename spiral.util.js
+// @description Math utilities and more.
 // @version 0.0.1
+// @author hoch (hongchan.choi@gmail.com)
+// -----------------------------------------------------------------------------
 
 !function (Spiral) {
 
   'use strict';
 
+  // @class SpiralEnvelope
+  function SpiralEnvelope() {
+    this._points = new Map();
+  }
+
+  // Get an finalized (time-sorted) a set of value-time pairs.
+  SpiralEnvelope.prototype.get = function () {
+    var times = [], envelope = [];
+    for (var key of this._points.keys())
+      times.push(key);
+    times.sort();
+    
+    // Change it back to Value-Time pair.
+    for (var i = 0; i < times.length; i++)
+      envelope.push([this._points.get(times[i]), times[i]]);
+    
+    return envelope;
+  };
+
+  // Add or modify envelope point(s).
+  SpiralEnvelope.prototype.set = function () {
+    // Store point as Time-Value pair. 
+    // (time is unique key, last-insertion priority)
+    for (var i = 0; i < arguments.length; i++)
+      this._points.set(arguments[i][1], arguments[i][0]);
+  };
+
+  function createEnvelope() {
+    var envelope = new SpiralEnvelope();
+    envelope.set.apply(envelope, arguments);
+    return envelope;
+  }
+
+
+  // Math functions.
   Object.defineProperties(Spiral, {
 
     /**
@@ -175,12 +214,21 @@
      * @return {Number}     Linear amplitude
      */
     veltoamp: {
-      vallue: function (velocity) {
+      value: function (velocity) {
         // TODO: velocity curve here?
         return velocity / 127;
+      }
+    },
+
+    // Create an envelope object. (a set of [value, time] pairs).
+    createEnvelope: {
+      value: function () {
+        var envelope = new SpiralEnvelope();
+        envelope.set.apply(envelope, arguments);
+        return envelope;
       }
     }
 
   });
 
-}(Spiral);
+}(window.Spiral);

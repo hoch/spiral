@@ -1,5 +1,11 @@
-// compat.js
+// -----------------------------------------------------------------------------
+// Spiral: Light-weight & modular Web Audio/MIDI API Library
+// 
+// @filename compat.js
+// @description Compatibility patch. (aka monkey patch)
 // @version 0.0.1
+// @author hoch (hongchan.choi@gmail.com)
+// -----------------------------------------------------------------------------
 
 !function (window) {
 
@@ -33,7 +39,7 @@
   // The browser does not have either prefixed or unprefixed version of
   // AudioContext. Quit immediately.
   if (!hasWebKitAudioContext && !hasAudioContext) {
-    console.log('[Spiral] FATAL: This browser does not support Web Audio API.');
+    console.log('[Spiral] This browser does not support Web Audio API.');
     window._SPIRALFATAL = true;
     return;
   }
@@ -41,7 +47,7 @@
   // The browser only has the prefixed version of AudioContext. Apply patch.
   if (hasWebKitAudioContext && !hasAudioContext) {
     window.AudioContext = window.webkitAudioContext;
-    console.log('[Spiral] WARN: This browser still has webkitAudioContext. Patch applied.');
+    console.log('[Spiral] This browser still has webkitAudioContext. Patch applied.');
   }
 
 

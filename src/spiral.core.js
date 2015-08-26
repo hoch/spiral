@@ -1,11 +1,19 @@
-// spiral.header.js
-// : Web Audio API prototype overriding and few nice things.
+// -----------------------------------------------------------------------------
+// Spiral: Light-weight & modular Web Audio/MIDI API Library
 // 
+// @filename spiral.core.js
+// @description Web Audio API prototype extension and few other nice things.
 // @version 0.0.1
+// @author hoch (hongchan.choi@gmail.com)
+// -----------------------------------------------------------------------------
 
-!function (Spiral) {
+!function () {
 
   'use strict';
+
+  // Spiral name space.
+  window.Spiral = new Object();
+
 
   // Spiral version.
   var SPIRAL_VERSION = '0.0.1';
@@ -35,6 +43,62 @@
       get: function () {
         return this.destination;
       }
+    },
+
+    /**
+     * Load an audio file asynchronously.
+     * @type {String} A URL of audio file.
+     * @return {Promise} Promise.
+     */
+    // TODO: onprogress?
+    // TODO: Design a global sound file manager for the better management.
+    loadAudioFile: {
+      value: function (fileURL) {
+        var _ctx = this;
+        var _promiseBody = function (resolve, reject) {
+          var xhr = new XMLHttpRequest();
+          xhr.open('GET', fileURL, true);
+          xhr.responseType = 'arraybuffer';
+
+          xhr.onload = function (event) {
+            if (xhr.status === 200) {
+              _ctx.decodeAudioData(xhr.response, resolve, reject);
+            } else {
+              var errorMessage = '[Spiral] XHR ' + xhr.status + ' ' + 
+                xhr.statusText + '. (' + fileURL + ')';
+              reject(errorMessage);
+            }
+          };
+
+          xhr.onerror = function (event) {
+            reject('[Spiral] XHR Network failure. (' + fileURL + ')');
+          };
+
+          xhr.send();
+        }
+
+        return new Promise(_promiseBody);
+      }
+    },
+
+    /**
+     * Create multiple nodes into a target object.
+     * @param {Object} target Target object for AudioNode creation.
+     * @param {Object} nodeList A node list of (variable name, node type).
+     */
+    createNodes: {
+      value: function (target, nodeList) {
+        if (typeof target !== 'object')
+          throw '[Spiral] Creation target is not an object.';
+
+        for (var name in nodeList) {
+          var functionName = 'create' + nodeList[name];
+            if (typeof this[functionName] !== 'function')
+              throw '[Spiral] Invalid AudioNode constructor: ' + functionName;
+            
+            target[name] = this[functionName]();
+        }
+      }
     }
 
   });
@@ -59,7 +123,7 @@
     },
 
     // Just a simple syntactic sugar. Disconnect everything. If you want a fine
-    // control on disconnection such as selective disconneciton, use
+    // control on disconnection such as selective disconnection, use
     // disconnect() method.
     cut: {
       value: function () {
@@ -110,7 +174,7 @@
       }
     },
 
-    // TO FIX: generalize this for polarity transition.
+    // TODO: generalize this for polarity transition.
     slew: {
       value: function (targetValue, startTime, duration) {
         var safeTargetValue = Math.max(EPSILON, targetValue);
@@ -126,10 +190,11 @@
 
 
   // Spiral primitives.
-  Object.defineProperties(Spiral, {
+  Object.defineProperties(window.Spiral, {
 
     /**
      * Returns the version of Spiral library.
+     * @return {String} Semver version string.
      */
     version: {
       get: function () {
@@ -146,6 +211,23 @@
     //   }
     // }
 
+
+    /**
+     * Generates Unique ID. Can be used for buffer, node, task and more.
+     * @return {String} Unique ID in 8 characters.
+     *
+     * http://stackoverflow.com/questions/105034/create-guid-uuid-in-javascript
+     */
+    generateUid: {
+      value: function () {
+        return 'yxxxxxxx'.replace(/[xy]/g, 
+          function(c) {
+            var r = Math.random()*8|0, v = c == 'x' ? r : (r&0x3|0x8);
+            return v.toString(16);
+          });
+      }
+    }
+
   });
 
-}(Spiral = {});
+}();

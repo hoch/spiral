@@ -14,6 +14,7 @@ var reload      = browserSync.reload;
 var SOURCE_FILES = [
   'src/compat.js',
   'src/spiral.core.js',
+  'src/sprial.ext.js',
   'src/sprial.util.js'
 ];
 
