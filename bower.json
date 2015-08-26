@@ -1,16 +1,17 @@
 {
   "name": "spiral",
-  "version": "0.0.2",
+  "version": "0.0.1-alpha",
   "main": [
     "index.html"
   ],
   "license": "http://hoch.github.io/spiral/LICENSE",
   "ignore": [
     "/.*",
-    "/tests/",
     "/doc/",
+    "/examples",
     "/sound/",
     "/src/",
+    "/tests/",
     "gulpfile.js",
     "package.json"
   ],
