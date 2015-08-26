@@ -15,7 +15,7 @@ var reload      = browserSync.reload;
 var SOURCE_FILES = [
   'src/compat.js',
   'src/spiral.core.js',
-  'src/sprial.util.js',
+  'src/spiral.util.js',
   'src/spiral.midi.js'
 ];
 
@@ -23,11 +23,11 @@ var SOURCE_FILES = [
 // Compile: compile source files.
 gulp.task('compile', function () {
   var combined = combiner.obj([
-      gulp.src(SOURCE_FILES),
-      plugins.uglify({ mangle: false }),
-      plugins.concat('spiral.min.js'),
-      gulp.dest('.')
-    ]);
+    gulp.src(SOURCE_FILES),
+    plugins.uglify({ mangle: false }),
+    plugins.concat('spiral.min.js'),
+    gulp.dest('.')
+  ]);
 
   combined.on('error', console.error.bind(console));
 

@@ -2,7 +2,7 @@
 <html>
 
 <head>
-  <script src="../dist/spiral.min.js"></script>
+  <script src="../spiral.min.js"></script>
 </head>
 
 <body>
@@ -15,6 +15,8 @@
     osc.to(amp).to(context.DAC);
 
     osc.start();
+
+    console.log(Spiral.mtof(60));
 
     amp.gain
       .step(0.0, 0.0)

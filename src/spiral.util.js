@@ -18,8 +18,9 @@
   // Get an finalized (time-sorted) a set of value-time pairs.
   SpiralEnvelope.prototype.get = function () {
     var times = [], envelope = [];
-    for (var key of this._points.keys())
+    this._points.keys.forEach(function (key) {
       times.push(key);
+    });
     times.sort();
     
     // Change it back to Value-Time pair.
