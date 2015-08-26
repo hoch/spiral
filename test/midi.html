@@ -1,0 +1,74 @@
+<!doctype html>
+<html>
+
+<head>
+  <script src="../src/compat.js"></script>
+  <script src="../src/spiral.core.js"></script>
+  <script src="../src/spiral.util.js"></script>
+  <script src="../src/spiral.midi.js"></script>
+</head>
+
+<body>
+  <script>
+
+  var mySynth = {};
+  var myMIDIProxy = {};
+    
+  Spiral.MIDI.ready(function (MIDI) {
+
+    // Setting up targets.
+    mySynth.onmidimessage = function (message) {
+      if (message.type === 'noteon' || message.type === 'noteoff') {
+        console.log('mySynth\t\t' + message.type + ':' + message.data1 + ':' + message.data2);
+      }
+    };
+
+    myMIDIProxy.onmidimessage = function (message) {
+      if (message.type === 'noteon' || message.type === 'noteoff') {
+        console.log('Proxy->mySynth...\t');
+        mySynth.onmidimessage(message);
+      }
+    };
+
+    // Register targets.
+    MIDI.addTarget('mySynth', mySynth);
+    MIDI.addTarget('myMIDIProxy', myMIDIProxy);
+
+    // Getting labels.
+    var labels = MIDI.report();
+    console.log('Spiral.MIDI reporting...');
+    console.log(' + sources:: ' + labels.sources);
+    console.log(' + targets:: ' + labels.targets);
+    
+
+    // 1-to-1 mapping.
+    // MIDI.route('padKONTROL PORT A').to('mySynth');
+    
+    // 1-to-many mapping.
+    MIDI.route('padKONTROL PORT A').to('mySynth', 'myMIDIProxy');
+
+    // TODO: 1-to-all mapping.
+    // Spiral.MIDI.route('padKONTROL PORT A').to();
+
+    // Multi-to-multi mapping is possible. If anything fails, throw.
+    // Spiral.MIDI.route('one', 'two').to('mySynth', 'myMIDIProxy')
+
+    // Route default (1st input) to the target
+    // Spiral.MIDI.route().to(myMIDIProxy);
+
+    // // Route all to mySynth
+    // Spiral.MIDI.route().to(myMIDIProxy);
+
+    // Unroute an source from a target.
+    Spiral.MIDI.unroute('padKONTROL PORT A').from('myMIDIProxy');
+
+    // Unroute an source from targets.
+    // Spiral.MIDI.unroute('padKONTROL PORT A').from('mySynth', 'myMIDIProxy');
+
+  });
+
+
+  </script>
+</body>
+
+</html>

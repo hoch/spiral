@@ -1,0 +1,50 @@
+<!doctype html>
+<html>
+
+<head>
+  <script src="../src/compat.js"></script>
+  <script src="../src/spiral.core.js"></script>
+  <script src="../src/spiral.util.js"></script>
+</head>
+
+<body>
+  <script>
+
+    var context = new AudioContext();
+
+    var urls = {
+      'fx': '../sound/fx-001.mp3',
+      'hh': '../sound/hh-001.mp3',
+      'kd': '../sound/kd-001.mp3',
+      'oh': '../sound/oh-001.mp1',
+      'perc': '../sound/perc-001.mp3',
+      'sd': 'http://fakeURL.com'
+    };
+
+    var buffers = {};
+
+    for (var name in urls) {
+      
+      context.loadAudioFile(urls[name]).then(function (buffer) {
+      });
+
+      
+      // (function (name, fileURL, taskId) { 
+      //   context.loadAudioFile(fileURL).then(function (buffer) {
+      //     buffers[name] = buffer;
+      //     console.log(buffer);
+      //     console.log('[' + taskId + '] loaded: ' + name + ' > ' + sounds[name] + ' ... ' + filesToLoad);
+      //     if (--filesToLoad === 0) {
+      //       console.log('DONE');
+      //     }
+      //   }, function (error) {
+      //     console.log(error);
+      //   });
+      // })(name, sounds[name], Spiral.generateUid());
+
+    }
+
+  </script>
+</body>
+
+</html>

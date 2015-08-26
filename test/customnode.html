@@ -1,0 +1,50 @@
+<!doctype html>
+<html>
+
+<head>
+  <script src="../src/compat.js"></script>
+  <script src="../src/spiral.core.js"></script>
+  <script src="../src/spiral.ext.js"></script>
+  <script src="../src/spiral.util.js"></script>
+</head>
+
+<body>
+  <script>
+
+    function Muter(context) {
+      this.gate = context.createGain();
+      this.input.connect(this.gate);
+      this.gate.connect(this.output);
+    }
+
+    Muter.prototype = {
+      mute: function (time) {
+        this.gate.gain.setValueAtTime(0.0, time);
+      },
+      unmute: function (time) {
+        this.gate.gain.setValueAtTime(1.0, time);
+      }
+    };
+
+    // Define custom node.
+    Spiral.defineCustomNode(Muter);
+
+
+    // Using the custom node.
+    var context = new AudioContext();
+
+    var osc = context.createOscillator();
+    var muter = context.createCustomNode('Muter');
+
+    osc.connect(muter);
+    muter.connect(context.destination);
+
+    osc.start();
+    muter.mute(0.5);
+    muter.unmute(1.5);
+    osc.stop(2.0);
+
+  </script>
+</body>
+
+</html>
