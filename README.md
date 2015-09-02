@@ -15,4 +15,4 @@ __Spiral__ is a JavaScript library for Web Audio API. It is a light-weight versi
 4. **Testing framework** (WIP): Spiral adopts the client [test framework from Chromium project](https://code.google.com/p/chromium/codesearch#chromium/src/third_party/WebKit/LayoutTests/webaudio/) - it uses `OfflineAudioContext` to verify the output of the code by investigating the result in a sample-accurate fashion.
 
 
-5. **Documentation** (WIP): Coming soon.
+5. **Documentation** (WIP): Coming soon as well.
