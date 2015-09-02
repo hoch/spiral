@@ -21,6 +21,95 @@
   var EPSILON = 0.001;
 
 
+  // Individual file loading Task.
+  function _loadAudioFile(context, fileInfo, done) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', fileInfo.url);
+    xhr.responseType = 'arraybuffer';
+    
+    xhr.onload = function () {
+      if (xhr.status === 200) {
+        context.decodeAudioData(xhr.response,
+          function (buffer) {
+            // console.log('Loading completed: ' + fileInfo.url);
+            done(fileInfo.name, buffer);
+          },
+          function (message) {
+            console.log('[Spiral] Decoding failure: ' + fileInfo.url + ' (' + message + ')');
+            done(fileInfo.name, null);
+          });
+      } else {
+        console.log('[Spiral] XHR Error: ' + fileInfo.url + ' (' + xhr.statusText + ')');
+        done(fileInfo.name, null);
+      }
+    };
+    
+    xhr.onerror = function (event) {
+      console.log('[Spiral] XHR Network failure: ' + fileInfo.url);
+      done(fileInfo.name, null);
+    };
+
+    xhr.send();
+  }
+
+
+  // @class AudioBufferMananger
+  // A wrapper/container for multiple file loaders.
+  function AudioBufferManager(context, audioFileData, resolve, reject, progress) {
+    this._context = context;
+    this._resolve = resolve;
+    this._reject = reject;
+    this._progress = progress;
+
+    this._buffers = new Map();
+    this._loadingTasks = {};
+
+    // TODO: check for duplicates.
+
+    for (var i = 0; i < audioFileData.length; i++) {
+      var fileInfo = audioFileData[i];
+      
+      // Check for duplicates filename and quit if it happens.
+      if (this._loadingTasks.hasOwnProperty(fileInfo.name)) {
+        console.log('[Spiral] Duplicated filename in AudioBufferManager: ' + fileInfo.name);
+        return;
+      }
+      
+      // Mark it as pending (0)
+      this._loadingTasks[fileInfo.name] = 0;
+      _loadAudioFile(this._context, fileInfo, this._done.bind(this));
+    }
+  }
+
+  AudioBufferManager.prototype._done = function (filename, buffer) {
+    // Code 1: loaded, Code 2: loading failed.
+    this._loadingTasks[filename] = buffer !== null ? 1 : 2;
+
+    this._buffers.set(filename, buffer);    
+    this._updateProgress(filename);
+  };
+
+  AudioBufferManager.prototype._updateProgress = function (filename) {
+    var numberOfFinishedTasks = 0, numberOfFailedTask = 0;
+    var numberOfTasks = 0;
+    for (var task in this._loadingTasks) {
+      numberOfTasks++;
+      if (this._loadingTasks[task] === 1)
+        numberOfFinishedTasks++;
+      else if (this._loadingTasks[task] === 2)
+        numberOfFailedTask++;
+    }
+
+    this._progress(filename, numberOfFinishedTasks, numberOfTasks);
+
+    if (numberOfFinishedTasks === numberOfTasks)
+      this._resolve(this._buffers);
+
+    if (numberOfFinishedTasks + numberOfFailedTask === numberOfTasks)
+      this._reject(this._buffers);
+  };
+
+
   // AudioContext overriding.
   Object.defineProperties(window.AudioContext.prototype, {
 
@@ -46,37 +135,15 @@
 
     /**
      * Load an audio file asynchronously.
-     * @type {String} A URL of audio file.
+     * @param {Array} dataModel Audio file info in the format of {name, url}
+     * @param {Function} onprogress Callback function for reporting the progress.
      * @return {Promise} Promise.
      */
-    // TODO: onprogress?
-    // TODO: Design a global sound file manager for the better management.
-    loadAudioFile: {
-      value: function (fileURL) {
-        var _ctx = this;
-        var _promiseBody = function (resolve, reject) {
-          var xhr = new XMLHttpRequest();
-          xhr.open('GET', fileURL, true);
-          xhr.responseType = 'arraybuffer';
-
-          xhr.onload = function (event) {
-            if (xhr.status === 200) {
-              _ctx.decodeAudioData(xhr.response, resolve, reject);
-            } else {
-              var errorMessage = '[Spiral] XHR ' + xhr.status + ' ' + 
-                xhr.statusText + '. (' + fileURL + ')';
-              reject(errorMessage);
-            }
-          };
-
-          xhr.onerror = function (event) {
-            reject('[Spiral] XHR Network failure. (' + fileURL + ')');
-          };
-
-          xhr.send();
-        }
-
-        return new Promise(_promiseBody);
+    loadAudioFiles: {
+      value: function (dataModel, onprogress) {
+        return new Promise(function (resolve, reject) {
+          new AudioBufferManager(this, dataModel, resolve, reject, onprogress);
+        }.bind(this));
       }
     },
 

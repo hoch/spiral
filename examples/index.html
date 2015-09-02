@@ -1,0 +1,35 @@
+<!doctype html>
+<html>
+
+<head>
+  <title>Examples | Spiral</title>
+</head>
+
+<body>
+  <a href="../index.html">Go back to Index</a>
+  
+  <h1>Examples</h1>
+  <p></p>
+
+  <ul id="list"></ul>
+
+  <script>
+    var list = {
+      'Automation with AudioParam': 'audioparam-automation.html',
+      'Loading multiple audio files': 'context-loadaudiofiles.html',
+      'MIDI': 'midi.html'
+    };
+
+    window.onload = function () {
+      var target = document.getElementById('list');
+      for (var title in list) {
+        var content = '<a href="' + list[title] + '">' + title + '</a>';
+        var item = document.createElement('li');
+        item.innerHTML = content;
+        target.appendChild(item);
+      }
+    };
+  </script>
+</body>
+
+</html>

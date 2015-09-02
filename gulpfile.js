@@ -45,8 +45,9 @@ gulp.task('serve', function () {
     browser: 'google chrome'
   });
 
-  gulp.watch(['test/*.html'], reload);
   gulp.watch(['src/*.js'], reload);
+  gulp.watch(['tests/*.html'], reload);
+  gulp.watch(['examples/*.html'], reload);
 });
 
 

@@ -1,0 +1,71 @@
+<!doctype html>
+<html>
+
+<head>
+  <script src="../src/compat.js"></script>
+  <script src="../src/spiral.core.js"></script>
+  <script src="../src/spiral.util.js"></script>
+  <script src="../src/spiral.midi.js"></script>
+</head>
+
+<body>
+  <script>
+    
+    // Demo dummy synth.
+    var synth = {
+      label: 'mySynth',
+      noteOn: function (pitch, velocity) {
+        console.log(this.label + ' > note on = ' + pitch + ' : ' + velocity);
+      },
+      noteOff: function (pitch) {
+        console.log(this.label + ' > note off = ' + pitch);
+      },
+      onmidimessage: function (message) {
+        switch (message.type) {
+          case 'noteon':
+            this.noteOn(message.data1, message.data2);
+            break;
+          case 'noteoff':
+            this.noteOff(message.data1);
+            break;
+        }
+      }
+    };
+
+    // Demo MIDI proxy target.
+    var proxyTarget = {
+      label: 'myProxy',
+      onmidimessage: function (message) {
+        console.log(this.label + ' > received ' + message.type);
+      }
+    };
+
+    // Start MIDI manager, then do MIDI-related things.
+    Spiral.createMIDIManager().start().then(function (MIDI) {
+
+      // Reporting labels.
+      var labels = MIDI.report();
+      console.log(labels.sources);
+      console.log(labels.targets);
+
+      // Define targets.
+      MIDI.defineTarget('mySynth', synth);
+      MIDI.defineTarget('myProxy', proxyTarget);
+
+      // Route a specific source to a specific target.
+      // MIDI.connect('padKONTROL PORT A').to('mySynth');
+      
+      // Or connect all inputs to a target.
+      MIDI.connectAll().to('mySynth', 'myProxy');
+
+      console.log('Spiral MIDI is ready! Play any MIDI controller connected!');
+
+    }, function (errorMessage) {
+      // When MIDI system is not available...
+      console.log(errorMessage);
+    });
+
+  </script>
+</body>
+
+</html>

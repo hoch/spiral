@@ -10,62 +10,61 @@
 
   'use strict';
 
+
   // Spiral.MIDI Namespace.
-  Spiral.MIDI = {};
-
-  // Spiral.MIDI internal storage.
-  var _MIDISources = new Map();
-  var _MIDITargets = new Map();
-  var _isMIDIReady = true;
-  var _onReadyCallback = null;
+  Spiral.MIDI = {
+    isSupported: false
+  };
 
 
-  // Internal helper: packaging MIDI message into an object.
-  function _MIDIObject(type, channel, data1, data2) {
+  // Internal helper: packages MIDI message into an object.
+  var _MIDIObject = function (type, channel, data1, data2) {
     return {
       type: type,
       channel: channel,
       data1: data1,
       data2 : data2
     };
-  }
+  };
 
-  // Internal helper: parsing MIDI message into human-readable data.
-  function _parseMIDIMessage(msg) {
+  // Internal helper: parses a MIDI message.
+  var _parseMIDIMessage = function (message) {
     // Get channel first (starts from 1).
-    var channel = (msg.data[0] & 0x0F) + 1;
+    var channel = (message.data[0] & 0x0F) + 1;
 
     // Branch on the message type.
-    switch (msg.data[0] >> 4) {
+    switch (message.data[0] >> 4) {
       case 8:
-        return _MIDIObject('noteoff', channel, msg.data[1], msg.data[2]);
+        return _MIDIObject('noteoff', channel, message.data[1], message.data[2]);
         break;
       case 9:
-        return _MIDIObject('noteon', channel, msg.data[1], msg.data[2]);
+        return _MIDIObject('noteon', channel, message.data[1], message.data[2]);
         break;
       case 10:
-        return _MIDIObject('polypressure', channel, msg.data[1], msg.data[2]);
+        return _MIDIObject('polypressure', channel, message.data[1], message.data[2]);
         break;
       case 11:
-        return _MIDIObject('controlchange', channel, msg.data[1], msg.data[2]);
+        return _MIDIObject('controlchange', channel, message.data[1], message.data[2]);
         break;
       case 12:
-        return _MIDIObject('programchange', channel, msg.data[1], null);
+        return _MIDIObject('programchange', channel, message.data[1], null);
         break;
       case 13:
-        return _MIDIObject('channelpressure', channel, msg.data[1], null);
+        return _MIDIObject('channelpressure', channel, message.data[1], null);
         break;
       case 14:
-        return _MIDIObject('pitchwheel', channel, (msg.data[1] << 8 || msg.data[2]));
+        return _MIDIObject('pitchwheel', channel, (message.data[1] << 8 || message.data[2]));
         break;
       default:
         return null;
         break;
     }
-  }
+  };
 
 
-  // @class SpiralMIDISource
+  /**
+   * @class SpiralMIDISource
+   */
   function SpiralMIDISource(midiInput) {
     this.targets = new Set();
     this.input = midiInput;
@@ -78,11 +77,11 @@
       var targetObj = arguments[i];
       if (this.targets.has(targetObj)) {
         // TODO: use targetObj's label instead.
-        console.log('[Spiral] Cannot add a duplicate MIDI target: ' + targetObj);
+        console.log('[Spiral:MIDI] Cannot add a duplicate MIDI target: ' + targetObj);
         return;
       }
 
-      this.targets.add(arguments[i]);
+      this.targets.add(targetObj);
     }
   };
 
@@ -94,262 +93,253 @@
         this.targets.delete(targetObj);
       } else {
         // TODO: use targetObj's label instead.
-        console.log('[Spiral] Target is not available for removal: ' + targetObj);
+        console.log('[Spiral:MIDI] Target is not available for removal: ' + targetObj);
         return;
       }
     }
   };
 
   // SpiralMIDISource.routeMIDIMessage()
-  SpiralMIDISource.prototype.routeMIDIMessage = function (midiMessage) {
+  SpiralMIDISource.prototype.routeMIDIMessage = function (message) {
     // Stop if there is no target for this source.
     if (this.targets.size === 0)
       return;
 
     // Send out the parsed MIDI message to all connected targets.
-    var parsedMessage = _parseMIDIMessage(midiMessage);
-    for (var target in this.targets)
+    var parsedMessage = _parseMIDIMessage(message);
+    this.targets.forEach(function (target) {
       target.onmidimessage(parsedMessage);
+    });
   };
 
 
-  // Spiral.MIDI public methods.
-  Object.defineProperties(window.Spiral.MIDI, {
+  /**
+   * @class SpiralMIDITarget
+   */
 
-    /**
-     * Defines MIDI-ready callback function.
-     * @param {Function} callback Callback function for MIDI on-ready event.
-     */
-    ready: {
-      value: function (callback) {
-        if (!_isMIDIReady)
-          return;
+  // TODO...
 
-        if (typeof callback !== 'function') {
-          console.log('[Spiral] Invalid callback function for spiral-midi-ready event.');
-          return;
-        }       
 
-        _onReadyCallback = callback;
-      }
-    },
+  /**
+   * @class SpiralMIDIManager
+   */
+  function SpiralMIDIManager() {
+    this.sources = new Map();
+    this.targets = new Map();
+    this.isReady = false;
+    this.onReadyCallback = null;
+  }
 
-    /**
-     * Returns JSON for Spiral MIDI inputs and targets.
-     * @return {Object} List of input and target labels.
-     */
-    report: {
-      value: function () {
-        var devices = {
-          sources: [],
-          targets: []
-        };
+  SpiralMIDIManager.prototype.start = function () {
 
-        // for (var label of _MIDISources.keys())
-        //   devices.sources.push(label);
-        
-        _MIDISources.forEach(function (source, label) {
-          devices.sources.push(label);
+    var me = this;
+
+    var promiseHandlers = function (resolve, reject) {
+
+      if (!Spiral.MIDI.isSupported)
+        reject('[Spiral.MIDI] Cannot proceed: Web MIDI API is not supported.');
+
+      // Initiate population.
+      window.navigator.requestMIDIAccess().then(function (access) {
+
+        // Collect MIDIInputs.
+        access.inputs.forEach(function (input) {
+          // TODO: handle MIDI input with duplicate names.
+          if (me.sources.has(input.name))
+            return;
+
+          me.sources.set(input.name, new SpiralMIDISource(input));
         });
 
-        _MIDITargets.forEach(function (target, label) {
-          devices.targets.push(label);
-        })
+        access.outputs.forEach(function (output) {
+          // TODO: handle MIDI output with duplicate names.
+          if (me.targets.has(output.name))
+            return;
 
-        return devices;
-      }
-    },
+          // me.targets.set(output.name, new SpiralMIDITarget(output));
+          me.targets.set(output.name, output);
+        });
 
-    /**
-     * Adds a target with the associated label.
-     * @param {String} label Target's unique label.
-     * @param {Object} target Target object with the onmidimessage handler.
-     */
-    addTarget: {
-      value: function (label, target) {
-        if (typeof label !== 'string') {
-          console.log('[Spiral] Target label should be a string.');
-          return;
-        }
+        me.isReady = true;
 
-        if (_MIDITargets.has('label')) {
-          console.log('[Spiral] Duplicate MIDI target label.');
-          return;
-        }
+        // Dispatch 'spiral-midi-ready' event.
+        window.dispatchEvent(new Event('spiral-midi-ready', { detail: null }));
 
-        if (typeof target.onmidimessage !== 'function') {
-          console.log('[Spiral] MIDI target does not have a valid MIDI message handler.');
-          return;
-        }
+        resolve(me);
 
-        _MIDITargets.set(label, target);
-      }
-    },
+      }, function (errorMessage) {
+        reject('[Spiral.MIDI] starting MIDI system failed: ' + errorMEssage);
+      });
 
-    /**
-     * Route MIDI inputs to MIDI targets.
-     * @param {String} arguments MIDI input labels.
-     * @return {Object.to()}
-     */
-    route: {
-      value: function () {
+    };
 
-        var sources = [];
-        var targets = [];
+    return new Promise(promiseHandlers);
+  };
 
-        // For method chaining: .to()
-        var chain = {
+  SpiralMIDIManager.prototype.stop = function () {
+    // TODO: clear out all the routing info.
+  };
 
-          /**
-           * Specified the MIDI target for the routing.
-           * @param {Objects} arguments Labels for MIDITarget objects.
-           */
-          to: function () {
-            // Check if a target is valid and registered.
-            for (var i = 0; i < arguments.length; i++) {
-              if (_MIDITargets.has(arguments[i])) {
-                targets.push(_MIDITargets.get(arguments[i]));
-              } else {
-                console.log('[Spiral] Cannot route invalid targets: ' + arguments[i]);
-                return;
-              }
-            }
+  SpiralMIDIManager.prototype.report = function () {
+    var sources = [], targets = [];
 
-            if (targets.length === 0) {
-              console.log('[Spiral] There is no target to route.');
-              return;
-            }
-
-            // All check passed, do the routing.
-            for (i = 0; i < sources.length; i++) {
-              sources[i].addTargets.apply(sources[i], targets);
-            }
-          }
-
-        };
-
-        // Check if a source is valid and registered.
-        for (var i = 0; i < arguments.length; i++) {
-          if (_MIDISources.has(arguments[i]))
-            sources.push(_MIDISources.get(arguments[i]));
-          else
-            console.log('[Spiral] Cannot route invalid source: "' + arguments[i] + '"');
-        }
-
-        if (sources.length === 0) {
-          console.log('[Spiral] There is no source to route.');
-          return chain;
-        }
-
-        return chain;
-      }
-    },
-
-    /**
-     * Unroute (disconnect) MIDI sources to MIDI targets.
-     * @param {String} arguments MIDI source labels.
-     * @return {Object.from()}
-     */
-    unroute: {
-      value: function () {
-        var sources = [];
-        var targets = [];
-
-        // For method chaining: .from()
-        var chain = {
-
-          /**
-           * Specified the MIDI target for the routing.
-           * @param {Objects} arguments Labels for MIDITarget objects.
-           */
-          from: function () {
-            // Check if a target is valid and registered.
-            for (var i = 0; i < arguments.length; i++) {
-              if (_MIDITargets.has(arguments[i])) {
-                targets.push(_MIDITargets.get(arguments[i]));
-              } else {
-                console.log('[Spiral] Cannot unroute invalid targets: ' + arguments[i]);
-                return;
-              }
-            }
-
-            if (targets.length === 0) {
-              console.log('[Spiral] There is no target to unroute.');
-              return;
-            }
-
-            // All check passed, do the routing.
-            for (i = 0; i < sources.length; i++) {
-              sources[i].removeTargets.apply(sources[i], targets);
-            }
-          }
-
-        };
-
-        // Check if a source is valid and registered.
-        for (var i = 0; i < arguments.length; i++) {
-          if (_MIDISources.has(arguments[i]))
-            sources.push(_MIDISources.get(arguments[i]));
-          else
-            console.log('[Spiral] Cannot route invalid inputs: "' + arguments[i] + '"');
-        }
-
-        if (sources.length === 0) {
-          console.log('[Spiral] There is no source to route.');
-          return chain;
-        }
-
-        return chain;
-      }
-    }
-
-  });
-
-
-  // Compat check. If Web MIDI API is not available, bail out.
-  if (typeof window.navigator.requestMIDIAccess !== 'function') {
-    console.log('[Spiral] Your browser does not support Web MIDI API!');
-    return;
-  }
-  
-  // System check passed: collecting MIDI system info with requestMIDIAccess().
-  window.navigator.requestMIDIAccess().then(function (midiAccess) {
-
-    // Collect MIDIInputs.
-    midiAccess.inputs.forEach(function (input) {
-      // TODO: handle MIDI input with duplicate names.
-      if (_MIDISources.has(input.name))
-        return;
-        
-      _MIDISources.set(input.name, new SpiralMIDISource(input));
+    this.sources.forEach(function (source, label) {
+      sources.push(label);
     });
 
-    midiAccess.outputs.forEach(function (output) {
-      // TODO: handle MIDI output with duplicate names.
-      if (_MIDITargets.has(output.name))
-        return;
-        
-      _MIDITargets.set(output.name, new SpiralMIDISource(output));
+    this.targets.forEach(function (target, label) {
+      targets.push(label);
     });
 
-    // After this point, the MIDI system is ready.
-    _isMIDIReady = true;
+    return {
+      sources: sources,
+      targets: targets
+    };
+  };
 
-    // Check the validity of on-ready callback.
-    if (!_onReadyCallback) {
-      console.log('[Spiral] MIDI.ready callback function is undefined.');
+  SpiralMIDIManager.prototype.defineTarget = function (label, target) {
+    if (typeof label !== 'string') {
+      console.log('[Spiral:MIDI] Target label should be a string.');
       return;
     }
 
-    // Dispatch 'spiral-midi-ready' event.
-    window.dispatchEvent(new Event('spiral-midi-ready', { detail: null }));
+    if (this.targets.has(label)) {
+      console.log('[Spiral:MIDI] Duplicate MIDI target label.');
+      return;
+    }
 
-    // Call on-ready callback.
-    _onReadyCallback(Spiral.MIDI);
+    if (typeof target.onmidimessage !== 'function') {
+      console.log('[Spiral:MIDI] MIDI target MUST have a valid onmidimessage handler.');
+      return;
+    }
 
-  }, function (errorMessage) {
-    console.log('[Spiral] Requesting MIDI access failed: ' + errorMessage);
-    return;
+    this.targets.set(label, target);
+  };
+
+  /**
+   * Connect MIDI sources to the targets.
+   * @param {String...} arguments MIDI input labels.
+   * @return {Object}
+   */
+  SpiralMIDIManager.prototype.connect = function () {
+
+    var selectedSources = [], selectedTargets = [];
+    var me = this;
+
+    // For method chaining: .to()
+    var tailFunction = {
+
+      /**
+       * Specify MIDI targets for the routing.
+       * @param {String...} arguments Labels for MIDITarget objects.
+       */
+      to: function () {
+        // Check if a target is valid and registered.
+        for (var i = 0; i < arguments.length; i++) {
+          var targetLabel = arguments[i];
+          if (me.targets.has(targetLabel)) {
+            selectedTargets.push(me.targets.get(targetLabel));
+          } else {
+            console.log('[Spiral:MIDI] Cannot route invalid targets: ' + targetLabel);
+            return;
+          }
+        }
+
+        if (selectedTargets.length === 0) {
+          console.log('[Spiral:MIDI] There is no target to route.');
+          return;
+        }
+
+        // All check passed, do the routing.
+        for (i = 0; i < selectedSources.length; i++) {
+          selectedSources[i].addTargets.apply(selectedSources[i], selectedTargets);
+        }
+
+      }
+
+    };
+
+    // Check if a source is valid and registered.
+    for (var i = 0; i < arguments.length; i++) {
+      var sourceLabel = arguments[i];
+      if (me.sources.has(sourceLabel))
+        selectedSources.push(me.sources.get(sourceLabel));
+      else
+        console.log('[Spiral:MIDI] Cannot route invalid source: "' + sourceLabel + '"');
+    }
+
+    if (selectedSources.length === 0) {
+      console.log('[Spiral:MIDI] There is no source to route.');
+      return tailFunction;
+    }
+
+    return tailFunction;
+  };
+
+
+  /**
+   * Connects all sources into a target.
+   */
+  SpiralMIDIManager.prototype.connectAll = function () {
+
+    var selectedTargets = [];
+    var me = this;
+
+    // For method chaining: .to()
+    return {
+
+      /**
+       * Specify MIDI targets for the routing.
+       * @param {String...} arguments Labels for MIDITarget objects.
+       */
+      to: function () {
+        // Check if a target is valid and registered.
+        for (var i = 0; i < arguments.length; i++) {
+          var targetLabel = arguments[i];
+          if (me.targets.has(targetLabel)) {
+            selectedTargets.push(me.targets.get(targetLabel));
+          } else {
+            console.log('[Spiral:MIDI] Cannot route invalid targets: ' + targetLabel);
+            return;
+          }
+        }
+
+        if (selectedTargets.length === 0) {
+          console.log('[Spiral:MIDI] There is no target to route.');
+          return;
+        }
+
+        // All check passed, do the routing.
+        me.sources.forEach(function (source) {
+          source.addTargets.apply(source, selectedTargets);
+        });
+
+      }
+    };
+  };
+
+
+  // Compat check.
+  if (typeof window.navigator.requestMIDIAccess === 'function')
+    Spiral.MIDI.isSupported = true;
+
+
+  // Spiral public methods.
+  Object.defineProperties(Spiral, {
+
+    /**
+     * Create an instance of MIDIManager.
+     */
+    createMIDIManager: {
+      value: function () {
+        return new SpiralMIDIManager();
+      }
+    },
+
+    parseMIDIMessage: {
+      value: _parseMIDIMessage
+    }
+
   });
 
 }(window.Spiral);

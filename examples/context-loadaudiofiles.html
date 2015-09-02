@@ -1,0 +1,53 @@
+<!doctype html>
+<html>
+
+<head>
+  <script src="../spiral.min.js"></script>
+</head>
+
+<body>
+  <script>
+    var ctx = new AudioContext();
+
+    // For HTML templating, this model style is better.
+    var audioFileData = [{
+        name: 'fx',
+        url: '../sound/fx-001.mp3'
+      }, {
+        name: 'hh',
+        url: '../sound/hh-001.mp3'
+      }, {
+        name: 'kd',
+        url: '../sound/kd-001.mp3'
+      }, {
+        name: 'oh',
+        url: '../sound/oh-001.mp3'
+      }, {
+        name: 'perc',
+        url: '../sound/perc-001.mp3'
+      }, 
+      // {
+      //   name: 'sd',
+      //   url: 'http://fakeURL.com'
+      // }
+    ];
+
+
+    function onprogress(filename, count, max) {
+      console.log('Loaded: ' + filename + ' (' + count + '/' + max + ')');
+    }
+
+    function onresolve(buffers) {
+      console.log('Loading completed.');
+    }
+
+    function onreject(buffers) {
+      console.log('Loading completed with some errors.');
+    }
+
+    ctx.loadAudioFiles(audioFileData, onprogress).then(onresolve, onreject);
+
+  </script>
+</body>
+
+</html>
