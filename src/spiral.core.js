@@ -1,6 +1,6 @@
 // -----------------------------------------------------------------------------
 // Spiral: Light-weight & modular Web Audio/MIDI API Library
-// 
+//
 // @filename spiral.core.js
 // @description Web Audio API prototype extension and few other nice things.
 // @author hoch (hongchan.choi@gmail.com)
@@ -26,7 +26,7 @@
     var xhr = new XMLHttpRequest();
     xhr.open('GET', fileInfo.url);
     xhr.responseType = 'arraybuffer';
-    
+
     xhr.onload = function () {
       if (xhr.status === 200) {
         context.decodeAudioData(xhr.response,
@@ -43,7 +43,7 @@
         done(fileInfo.name, null);
       }
     };
-    
+
     xhr.onerror = function (event) {
       console.log('[Spiral] XHR Network failure: ' + fileInfo.url);
       done(fileInfo.name, null);
@@ -64,17 +64,16 @@
     this._buffers = new Map();
     this._loadingTasks = {};
 
-    // TODO: check for duplicates.
-
+    // Iterating file loading.
     for (var i = 0; i < audioFileData.length; i++) {
       var fileInfo = audioFileData[i];
-      
+
       // Check for duplicates filename and quit if it happens.
       if (this._loadingTasks.hasOwnProperty(fileInfo.name)) {
         console.log('[Spiral] Duplicated filename in AudioBufferManager: ' + fileInfo.name);
         return;
       }
-      
+
       // Mark it as pending (0)
       this._loadingTasks[fileInfo.name] = 0;
       _loadAudioFile(this._context, fileInfo, this._done.bind(this));
@@ -82,25 +81,29 @@
   }
 
   AudioBufferManager.prototype._done = function (filename, buffer) {
-    // Code 1: loaded, Code 2: loading failed.
-    this._loadingTasks[filename] = buffer !== null ? 1 : 2;
-
-    this._buffers.set(filename, buffer);    
+    // Label the loading task.
+    this._loadingTasks[filename] = buffer !== null ? 'loaded' : 'failed';
+    
+    // A failed task will be a null buffer.
+    this._buffers.set(filename, buffer);
+    
     this._updateProgress(filename);
   };
 
   AudioBufferManager.prototype._updateProgress = function (filename) {
     var numberOfFinishedTasks = 0, numberOfFailedTask = 0;
     var numberOfTasks = 0;
+
     for (var task in this._loadingTasks) {
       numberOfTasks++;
-      if (this._loadingTasks[task] === 1)
+      if (this._loadingTasks[task] === 'loaded')
         numberOfFinishedTasks++;
-      else if (this._loadingTasks[task] === 2)
+      else if (this._loadingTasks[task] === 'failed')
         numberOfFailedTask++;
     }
 
-    this._progress(filename, numberOfFinishedTasks, numberOfTasks);
+    if (typeof this._progress === 'function')
+      this._progress(filename, numberOfFinishedTasks, numberOfTasks);
 
     if (numberOfFinishedTasks === numberOfTasks)
       this._resolve(this._buffers);
@@ -161,7 +164,7 @@
           var functionName = 'create' + nodeList[name];
             if (typeof this[functionName] !== 'function')
               throw '[Spiral] Invalid AudioNode constructor: ' + functionName;
-            
+
             target[name] = this[functionName]();
         }
       }
@@ -286,7 +289,7 @@
      */
     generateUid: {
       value: function () {
-        return 'yxxxxxxx'.replace(/[xy]/g, 
+        return 'yxxxxxxx'.replace(/[xy]/g,
           function(c) {
             var r = Math.random()*8|0, v = c == 'x' ? r : (r&0x3|0x8);
             return v.toString(16);

@@ -32,11 +32,12 @@
 
 
   // Check for AudioContext.
-  var hasWebKitAudioContext = window.hasOwnProperty('webkitAudioContext');
   var hasAudioContext = window.hasOwnProperty('AudioContext');
+  var hasWebKitAudioContext = window.hasOwnProperty('webkitAudioContext');
 
   // The browser does not have either prefixed or unprefixed version of
   // AudioContext. Quit immediately.
+  // This is for the old version of IE. (before Edge)
   if (!hasWebKitAudioContext && !hasAudioContext) {
     console.log('[Spiral] This browser does not support Web Audio API.');
     window._SPIRALFATAL = true;
@@ -44,6 +45,7 @@
   }
 
   // The browser only has the prefixed version of AudioContext. Apply patch.
+  // This is for Safari.
   if (hasWebKitAudioContext && !hasAudioContext) {
     window.AudioContext = window.webkitAudioContext;
     console.log('[Spiral] This browser still has webkitAudioContext. Patch applied.');
@@ -87,11 +89,35 @@
   // Injecting obsolete method names to the associated name space.
   for (var nameSpace in DEPRECATED_DICT) {
     var newMethods = DEPRECATED_DICT[nameSpace];
-    for (var oldMethod in newMethods) {
+    for (var oldMethod in newMethods)
       window[nameSpace].prototype[oldMethod] = window[nameSpace].prototype[newMethods[oldMethod]];
-    }
   }
 
-  // TODO: Handle special cases for start/stop method in Safari.
+
+  // Handle special cases for start/stop method in Safari. Safari's start/stop
+  // methods throw when the time argument is not specified.
+  if (which.split(' ')[0] === 'Safari') {
+    var _oscStart = window.OscillatorNode.start;
+    var _oscStop = window.OscillatorNode.stop;
+    var _bufferSourceStart = window.AudioBufferSourceNode.start;
+    var _bufferSourceStop = window.AudioBufferSourceNode.stop;
+
+    window.OscillatorNode.start = function (time) {
+      _oscStart(time || 0);
+    };
+
+    window.OscillatorNode.stop = function (time) {
+      _oscStop(time || 0);
+    };
+    
+    window.AudioBufferSourceNode.start = function (time) {
+      _bufferSourceStart(time || 0);
+    };
+
+    window.AudioBufferSourceNode.stop = function (time) {
+      _bufferSourceStop(time || 0);
+    };
+
+  }
 
 }(window);
