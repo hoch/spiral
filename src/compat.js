@@ -39,8 +39,7 @@
   // AudioContext. Quit immediately.
   // This is for the old version of IE. (before Edge)
   if (!hasWebKitAudioContext && !hasAudioContext) {
-    console.log('[Spiral] This browser does not support Web Audio API.');
-    window._SPIRALFATAL = true;
+    console.log('[Spiral] This browser does not support Web Audio API. Bye.');
     return;
   }
 

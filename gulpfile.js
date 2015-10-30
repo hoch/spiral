@@ -16,6 +16,7 @@ var SOURCE_FILES = [
   'src/compat.js',
   'src/spiral.core.js',
   'src/spiral.util.js',
+  'src/spiral.buff.js',
   'src/spiral.midi.js'
 ];
 

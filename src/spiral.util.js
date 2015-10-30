@@ -37,13 +37,7 @@
     for (var i = 0; i < arguments.length; i++)
       this._points.set(arguments[i][1], arguments[i][0]);
   };
-
-  function createEnvelope() {
-    var envelope = new SpiralEnvelope();
-    envelope.set.apply(envelope, arguments);
-    return envelope;
-  }
-
+  
 
   // Math functions.
   Object.defineProperties(Spiral, {

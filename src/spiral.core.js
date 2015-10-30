@@ -6,7 +6,7 @@
 // @author hoch (hongchan.choi@gmail.com)
 // -----------------------------------------------------------------------------
 
-!function () {
+!function (window) {
 
   'use strict';
 
@@ -15,7 +15,7 @@
 
 
   // Spiral version.
-  var SPIRAL_VERSION = '0.0.2';
+  var SPIRAL_VERSION = '0.0.3';
 
   // Epsilon value for exponential operation in AudioParam. It is -60dBFS.
   var EPSILON = 0.001;
@@ -299,4 +299,4 @@
 
   });
 
-}();
+}(window);
