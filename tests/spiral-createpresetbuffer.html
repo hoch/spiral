@@ -1,0 +1,34 @@
+<!--
+  Test Spiral.createPresetBuffer.
+-->
+
+<!doctype html>
+<html>
+
+<head>
+  <script src="../spiral.min.js"></script>
+</head>
+
+<body>
+  <script>
+    var context = new AudioContext();
+    var output = context.createGain();
+    output.to(context.DAC);
+    output.gain.value = 0.5;
+
+    function playPresetBuffer(type, startTime, duration) {
+      var src = context.createBufferSource();
+      src.buffer = Spiral.createPresetBuffer(context, { type: type, duration: 1.0 });
+      src.loop = true;
+      src.to(output);
+      src.start(startTime);
+      src.stop(startTime + duration);
+    }
+
+    playPresetBuffer('white', 1.0, 3.0);
+    playPresetBuffer('pink', 4.0, 3.0);
+    playPresetBuffer('impulse', 7.5, 0.25);
+  </script>
+</body>
+
+</html>

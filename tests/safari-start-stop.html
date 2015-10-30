@@ -1,0 +1,23 @@
+<!--
+  Test start/stop method on Safari without time argument.
+-->
+
+<!doctype html>
+<html>
+
+<head>
+  <script src="../spiral.min.js"></script>
+</head>
+
+<body>
+  <script>
+    var context = new AudioContext();
+    var osc = context.createOscillator();
+    osc.to(context.DAC);
+
+    osc.start();
+    osc.stop();
+  </script>
+</body>
+
+</html>
